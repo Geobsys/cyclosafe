@@ -67,7 +67,7 @@ if [ "$EUID" -eq 0 ]; then
 fi
 
 info "Please log in"
-sudo echo "dummy" > /dev/null
+sudo -v || exit 1
 
 uname -a | grep rpi > /dev/null
 if [ $? -eq 1 ]; then
@@ -96,8 +96,12 @@ if [ $(cat /boot/firmware/cmdline.txt | grep -c ipv6.disable=1) -eq 0 ]; then
 fi
 
 if ! [ -f /opt/ros/jazzy/setup.bash ]; then
-  info "No ROS2 installation detected. Installing." 
-	./ros_install.sh
+  info "No ROS2 installation detected. Installing."
+  # ROS_VARIANT (desktop / ros-base) can be set in .env
+  if ! ROS_VARIANT="${ROS_VARIANT:-desktop}" ./ros_install.sh || ! [ -f /opt/ros/jazzy/setup.bash ]; then
+    error "ROS2 installation failed."
+    exit 1
+  fi
 fi
 
 info "Sourcing ROS2"
