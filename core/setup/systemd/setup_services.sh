@@ -81,8 +81,9 @@ if [ $? -eq 4 ]; then
 cat << EOF | sudo tee /etc/systemd/system/cyclosafed.service
 [Unit]
 Description=cyclosafe daemon
-After=gpiod.service
+After=gpiod.service gpsd.service chrony.service
 Requires=gpiod.service
+Wants=gpsd.service chrony.service
 StartLimitIntervalSec=150
 StartLimitBurst=3
 
@@ -92,6 +93,8 @@ User=$USERNAME
 Restart=on-failure
 RestartSec=5
 EnvironmentFile=$env_file
+ExecStartPre=-/usr/bin/chronyc waitsync 12 0.1
+TimeoutStartSec=150
 ExecStart=/bin/bash -c "source \$SCRIPTS_PATH/launch_wrapper.sh"
 TimeoutStopSec=$SHUTDOWN_DELAY
 KillMode=mixed
@@ -111,7 +114,7 @@ if [ $? -eq 4 ]; then
   # Créer le fichier service
 cat << EOF | sudo tee /etc/systemd/system/gpiod.service
 [Unit]
-Description=gpio daemon controlling led blinking, button press and battery monitoring
+Description=gpio daemon controlling screen, button press and battery monitoring
 StartLimitIntervalSec=60
 StartLimitBurst=3
 
@@ -131,35 +134,24 @@ WantedBy=multi-user.target
 EOF
 fi
 
-sudo systemctl status gps_time.service > /dev/null
-if [ $? -eq 4 ]; then
-  info "Installing gps_time service"
-  # Créer le fichier service
-cat << EOF | sudo tee /etc/systemd/system/gps_time.service
-[Unit]
-Description=Synchronisation de l'heure système via GPS
-After=network.target
-Wants=network.target
-StartLimitIntervalSec=50
-StartLimitBurst=5
+info "Configuring GPS time synchronisation (gpsd + chrony + PPS)"
 
-[Service]
-Type=simple
-EnvironmentFile=$env_file
-ExecStart=/bin/bash -c "source $SCRIPTS_PATH/gps_time.sh"
-Restart=on-failure
-RestartSec=2
-TimeoutStartSec=30
-TimeoutStopSec=10
-
-[Install]
-WantedBy=multi-user.target
+# -n : lit le GPS sans attendre de client (nécessaire pour chrony)
+# -b : lecture seule, gpsd ne modifie pas la configuration du module GPS
+cat << EOF | sudo tee /etc/default/gpsd
+START_DAEMON="true"
+USBAUTO="false"
+DEVICES="$GPS_SERIAL_PORT"
+GPSD_OPTIONS="-n -b -s ${GPS_BAUDRATE:-9600}"
 EOF
-fi
 
-sudo systemctl enable gps_time.service
-sudo systemctl enable gps_time.service
-info "gps_time.service enabled and started"
+sudo cp $parent_path/../chrony/cyclosafe-gps.conf /etc/chrony/conf.d/cyclosafe-gps.conf
+# Pas de RTC : autorise chrony à corriger l'heure d'un coup à tout moment si l'écart dépasse 1s
+sudo sed -i 's/^makestep .*/makestep 1 -1/' /etc/chrony/chrony.conf
+
+sudo systemctl enable gpsd.service chrony.service
+sudo systemctl restart gpsd.service chrony.service
+info "gpsd.service and chrony.service enabled and started"
 
 sudo systemctl enable gpiod.service
 sudo systemctl start gpiod.service

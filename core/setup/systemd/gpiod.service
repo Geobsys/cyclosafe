@@ -1,5 +1,5 @@
 [Unit]
-Description=gpio daemon controlling led blinking, button press and battery monitoring
+Description=gpio daemon controlling screen, button press and battery monitoring
 After=pigpiod.service
 Requires=pigpiod.service
 StartLimitIntervalSec=60

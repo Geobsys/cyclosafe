@@ -1,7 +1,8 @@
 [Unit]
 Description=cyclosafe daemon
-After=gpiod.service
+After=gpiod.service gpsd.service chrony.service
 Requires=gpiod.service
+Wants=gpsd.service chrony.service
 StartLimitIntervalSec=150
 StartLimitBurst=3
 
@@ -11,6 +12,8 @@ User=cycliste
 Restart=on-failure
 RestartSec=5
 EnvironmentFile=/home/cycliste/cyclosafe/core/setup/.env
+ExecStartPre=-/usr/bin/chronyc waitsync 12 0.1
+TimeoutStartSec=150
 ExecStart=/bin/bash -c "source $SCRIPTS_PATH/launch_wrapper.sh"
 TimeoutStopSec=13
 KillMode=mixed

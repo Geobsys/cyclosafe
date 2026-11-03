@@ -48,6 +48,8 @@ class AImagePublisher(Node):
 			self.declare_parameter('no_compression', False, ParameterDescriptor(description="Disable jpeg compression. Use Image instead of CompressedImage."))
 			self.update_parameters()
 
+			# Lu une seule fois : la caméra n'est configurée qu'au démarrage
+			self.resolution = self.get_parameter('resolution').get_parameter_value().integer_array_value
 			self.preview = self.get_parameter('preview').get_parameter_value().bool_value
 			self.no_compression = self.get_parameter('no_compression').get_parameter_value().bool_value
 
@@ -136,10 +138,9 @@ class AImagePublisher(Node):
 			msg.data = bytes(img_data.tobytes())
 		else:
 			msg = Image()
-			msg.height = self.resolution[1]
-			msg.width = self.resolution[0]
+			msg.height, msg.width = img_data.shape[:2]
 			msg.encoding = 'bgr8'  # ou 'rgb8' selon votre format
-			msg.step = self.resolution[0] * 3  # 3 bytes par pixel pour BGR/RGB
+			msg.step = msg.width * 3  # 3 bytes par pixel pour BGR/RGB
 			msg.is_bigendian = False
 			msg.data = bytes(img_data.flatten().tobytes())
 		
@@ -156,7 +157,6 @@ class AImagePublisher(Node):
 		self.interval = self.get_parameter('interval').get_parameter_value().double_value
 		if (hasattr(self, 'timer')):
 			self.timer.timer_period_ns = self.interval * 1000 * 1000 * 1000
-		self.resolution = self.get_parameter('resolution').get_parameter_value().integer_array_value
 
 	def routine(self):
 		try:

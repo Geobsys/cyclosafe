@@ -114,6 +114,22 @@ if [ $? -ne 0 ]; then
   warning "Some ROS package dependency failed to install"
 fi
 
+info "Installing OLED screen driver"
+
+sudo pip install --break-system-packages luma.oled
+
+if [ $? -ne 0 ]; then
+  warning "Failed to install luma.oled, the OLED screen will not work"
+fi
+
+info "Installing GPS time synchronisation dependencies"
+
+sudo apt-get install -y gpsd gpsd-clients pps-tools chrony python3-gps
+
+if [ $? -ne 0 ]; then
+  warning "Failed to install gpsd/chrony, GPS node and time synchronisation will not work"
+fi
+
 info "Building ROS packages"
 colcon build --symlink-install --parallel-workers=2
 

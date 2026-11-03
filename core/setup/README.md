@@ -58,7 +58,7 @@ Basé sur ce repo : https://github.com/Ar-Ray-code/rpi-bullseye-ros2
 
 ### systemd/setup_services.sh
 
-Teste la présence de chacun des 4 services nécessaires à cyclosafe, et les configure puis les active si nécessaire.
+Teste la présence des services cyclosafed et gpiod, et les configure puis les active si nécessaire. Configure également gpsd et chrony pour la synchronisation de l'heure par GPS (voir [**la page dédiée aux services**](systemd/README.md#synchronisation-de-lheure-gpsd--chrony)).
 
 Voir [**la page dédiée aux services**](systemd/README) pour plus d'info.
 
@@ -84,9 +84,9 @@ S'ajoute au fichier de configuration ***/boot/firmware/cmdline.txt*** (ce qui es
 
 S'ajoute au fichier de configuration ***/boot/firmware/config.txt*** (ce qui est fait automatiquement avec le script **setup.sh**).
 
-> **dtoverlay=disable-bt** : désactive le bluetooth
+> **dtparam=i2c_arm=on** : active le bus I2C utilisé par la jauge de batterie et l'écran OLED
 
-> **enable_uart=1** : active l'uart
+> **dtoverlay=pps-gpio,gpiopin=18** : expose l'impulsion PPS du GPS (GPIO18) sur `/dev/pps0`, utilisée par chrony
 
 > **dtoverlay=uartN** : active les interfaces uart utilisées par cyclosafe
 
@@ -117,19 +117,19 @@ Définit l'ensemble des variables d'environnement utilisées par cyclosafe.
 
 > **CYCLOSAFE_RECORD** : répertoire où sauvegarder les enregistrement de données
 
-> **CYCLOSAFE_LOGS** : répertoire où sauvegarder les logs des différents scripts ([**gps_time.sh**](../scripts/README#gps_timesh) et [**gpio.sh**](../scripts/README#gpiosh))
+> **CYCLOSAFE_LOGS** : répertoire où sauvegarder les logs des différents scripts ([**gpio.sh**](../scripts/README#gpiosh) et [**launch_wrapper.sh**](../scripts/README#launch_wrappersh))
 
-> **GPS_SERIAL_PORT** : serial device sur lequel est branché le GPS. Utilisé par [**gps_time.sh**](../scripts/README#gps_timesh) pour mettre à jour l'heure et la date du système.
+> **GPS_SERIAL_PORT** : serial device sur lequel est branché le GPS. Lu exclusivement par gpsd (écrit dans ***/etc/default/gpsd*** par `setup_services.sh`).
+
+> **GPS_BAUDRATE** : baudrate du port série du GPS, utilisé par gpsd.
 
 > **SCRIPTS_PATH** : répertoire où trouver les différents scripts lancés par les services systemd. A priori équivalent à **$CYCLOSAFE_WORKSPACE/scripts**
 
 > **SHUTDOWN_DELAY** : temps imparti à l'arrêt du service [**cyclosafed.service**](systemd/README#cyclosafedservice) pour se terminer correctement avant d'éteindre le raspberry.
 
-> **LOW_BATTERY_PERCENT** : pourcentage de batterie (valuer flottante de 0 à 1) en dessous duquel s'allume le boyant batterie faible 
+> **LOW_BATTERY_PERCENT** : pourcentage de batterie (valuer flottante de 0 à 1) en dessous duquel `LOW` est affiché à côté de la batterie sur l'écran
 
-> **LOW_STORAGE_TRESHOLD** : espace de stockage (en MO) disponible en dessous duquel s'allume le voyant de stockage plein.
-
-> **LED_BRIGHTNESS** : valeur flottante de 0 à 1 définissant le luminosité avec laquelle les leds sont allumées
+> **LOW_STORAGE_TRESHOLD** : espace de stockage (en MO) disponible en dessous duquel `FULL` est affiché sur l'écran et l'enregistrement n'est pas lancé.
 
 > **ENCRYPTION** : `1` pour activer l'encryptage des bags à mesure qu'ils sont créés.
 

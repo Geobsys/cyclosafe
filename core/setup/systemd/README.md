@@ -22,7 +22,7 @@ S'il est activé (**sudo systemctl enable cyclosafed.service**), les mesures son
 
 Il lance le script [`launch_wrapper.sh`](../../scripts/launch_wrapper.sh). Il s'agit d'un wrapper pour sourcer l'environnement ROS et executer la commande `ros2 launch cyclosafe cyclosafe.launch.py record:=true`.
 
-> **Note** : ce service est dépendant du bon fonctionnement des services [**gpiod.service**](#gpiodservice) et [**gps_time.service**](#gps_timeservice).
+> **Note** : ce service est dépendant du bon fonctionnement de [**gpiod.service**](#gpiodservice). Il démarre après [**gpsd.service et chrony.service**](#synchronisation-de-lheure-gpsd--chrony) et attend jusqu'à ~2 min (`chronyc waitsync`) que l'heure soit synchronisée par le GPS avant de lancer les mesures. Sans fix GPS dans ce délai, les mesures démarrent quand même.
 
 > Si un des noeuds n'est pas correment lancé ou s'arrête, le service est relancé.
 
@@ -52,14 +52,26 @@ Service démarrant le script [**gpio.sh**](../../scripts/README#gpiosh).
 Il est crucial que ce service démarre correctement car le script est responsable :
 
 - du monitoring du bouton d'extinction
-- du contrôle des leds
+- de l'affichage sur l'écran OLED
 - du monitoring de la tension de la batterie
 - du monitoring de l'espace restant sur la carte SD
 - de l'arrêt propre de cyclosafed.service
 
-## gps_time.service
+## Synchronisation de l'heure (gpsd + chrony)
 
-Service démarrant le script [**gps_time.sh**](../../scripts/README#gps_timesh).
+Le raspberry n'ayant pas de RTC, l'heure système au démarrage est celle du dernier arrêt (`fake-hwclock`). Elle est corrigée à partir du GPS par deux services système (paquets Debian), configurés par `setup_services.sh` :
 
-Le script est lancé une seule fois à chaque démarrage.
+- **gpsd.service** : seul processus lisant le port série du GPS (`GPS_SERIAL_PORT`, `GPS_BAUDRATE`). Configuration dans ***/etc/default/gpsd*** (`-n` : lecture sans attendre de client, `-b` : lecture seule, la configuration du module GPS n'est jamais modifiée). Il transmet l'heure à chrony et les positions au [**noeud gps**](../../src/cyclosafe/README.md#gpspy).
+- **chrony.service** : discipline l'horloge système. Configuration dans ***/etc/chrony/conf.d/cyclosafe-gps.conf*** (copie de [**chrony/cyclosafe-gps.conf**](../chrony/cyclosafe-gps.conf)) :
+	- **NMEA** : heure transmise par gpsd, donne la seconde exacte
+	- **PPS** : impulsion du GPS sur la GPIO18 (`/dev/pps0`), donne le début exact de chaque seconde (précision de l'ordre de la microseconde)
+	- `makestep 1 -1` dans ***/etc/chrony/chrony.conf*** : l'heure est corrigée d'un coup dès que l'écart dépasse 1s, y compris si le fix GPS arrive après le début d'un enregistrement (un saut d'horloge est alors présent dans le bag).
 
+Vérifier l'état de la synchronisation :
+
+~~~
+chronyc sources -v   # PPS doit être marqué '*' une fois synchronisé
+chronyc tracking
+gpsmon               # ou cgps, pour visualiser les données reçues par gpsd
+ppstest /dev/pps0    # vérifie la réception des impulsions PPS
+~~~

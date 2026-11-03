@@ -1,10 +1,6 @@
 
-#Cyclosafe specific
-
-dtoverlay=disable-bt
-enable_uart=1
-
-dtoverlay=uart1
-dtoverlay=uart2
+#Cyclosafe specifics
+dtoverlay=pps-gpio,gpiopin=18
 dtoverlay=uart3
+dtoverlay=uart4
 dtoverlay=uart5

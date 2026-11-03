@@ -9,16 +9,21 @@ Le chemin vers ces scripts doit être indiqué par la variable d'environnement *
 Script ayant plusieurs fonctions :
 
 - monitoring du bouton d'extinction : Retourne 255 (-1) lors de l'appui du bouton
-- contrôle des leds : clignotement des led
-- monitoring de la batterie : mesure la tension toutes les 10s. Retourne 254 (-2) si la tension est inférieure à la tension minimale.
-- monitoring de l'espace de stockage restant : un espace insuffisant déclenche le voyant de stockage plein mais ne provoque pas l'arrêt de raspberry
+- affichage sur l'écran OLED 128x32 (SSD1306, I2C `0x3C`, via la librairie **luma.oled**) :
+	- `BAT` : pourcentage de batterie donné par la jauge, suivi de `LOW` s'il est inférieur à `LOW_BATTERY_PERCENT`
+	- `SD` : taux d'occupation de la carte SD et espace libre, ou `FULL` si l'espace libre est inférieur à `LOW_STORAGE_TRESHOLD`
+	- `REC` : `ON` si un processus `ros2 bag record` est en cours, `OFF` sinon
+	- un point clignotant en haut à droite indique que le script tourne
+	- lors d'un arrêt (bouton ou batterie vide), un message est affiché jusqu'à la coupure de l'alimentation
+- monitoring de la batterie : mesure la tension et l'état de charge toutes les 10s. Retourne 254 (-2) si la tension est inférieure à la tension minimale.
+- monitoring de l'espace de stockage restant (toutes les 30s) : un espace insuffisant est signalé sur l'écran mais ne provoque pas l'arrêt de raspberry
+
+Si l'écran n'est pas détecté au démarrage, le script continue de fonctionner sans affichage.
 
 ### Valeurs par défaut (paramètrables dans gpio.py)
 
-- **BTN_RST_GPIO=16** : gpio pin auquel est connecté le bouton d'arrêt.
-- **LED_BATTERY_GPIO=9** : gpio pin de la led batterie faible
-- **LED_BUZY_GPIO=7** : gpio pin de la led d'état
-- **LED_SD_CARD_GPIO=10** : gpio pin de la led stockage plein
+- **BTN_RST_GPIO=20** : gpio pin auquel est connecté le bouton d'arrêt.
+- **OLED_I2C_PORT=1** / **OLED_I2C_ADDRESS=0x3C** : bus et adresse I2C de l'écran
 - **BUTTON_SHUTDOWN=255** : valeur de retour (alias code d'erreur) pour un appui sur le bouton. **NE PAS MODIFIER (à moins de corriger le script gpio.sh en conséquence)**
 - **BUTTON_SHUTDOWN=254** : valeur de retour (alias code d'erreur) pour une batterie faible (voltage trop faible). **NE PAS MODIFIER (à moins de corriger le script gpio.sh en conséquence)**
 - **NBR_CELLS=2** : nombre d'accus dans la batterie
@@ -44,29 +49,17 @@ Service ayant plusieurs fonctions :
 
 > **CYCLOSAFE_LOGS** : définit le répertoire où on_off.log est enregistré
 
+## bq34z100.py
+
+Implémente un driver python minimal de la jauge de batterie **TI BQ34Z100-G1** (I2C, adresse `0x55`) permettant de lire la tension du pack, le courant instantané/moyen, l'état de charge (SOC), la capacité restante et la température. Utilisé par **gpio.py** :
+- la tension du pack sert à déclencher l'arrêt du raspberry (seuil `NBR_CELLS * MIN_VOLTAGE`)
+- l'état de charge calculé par la jauge est comparé à `LOW_BATTERY_PERCENT` pour signaler une batterie faible
+
+> La tension et le SOC renvoyés ne sont fiables que si la jauge a été configurée (chimie, capacité, nombre de cellules) et calibrée (Voltage Divider, courant) au préalable via les outils TI (bqStudio).
+
 ## battery_monitor.py
 
-Implémente un driver python de la puce INA219 permettant de prendre des mesures de la tension de batterie et de consommation instantanée. Utilisé par **gpio.py**.
-
-Basé sur : https://github.com/DFRobotdl/INA219-Python
-Modifs:
-- ajout d'une fonction get_battery_pourcent
-
-Peut-être lancé seul pour afficher différentes informations sur la batterie et sur la puissance instantanée : ***python3 ./battery_monitor.py***
-
-## gps_time.sh
-
-Script lancé au démarrage par [**gps_time.service**](../setup/systemd/README#gps_timeservice).
-
-Mets à jour l'heure et la date du système à partir des frames NMEA envoyées par un GPS connecté en serial.
-
-Si le GPS n'a pas de pile ou si celle-ci est défectueuse, l'heure envoyée par le GPS ne sera pas correcte tant qu'il n'aura pas pu fixer la position. Pour pallier à cela, une date est considérée comme "valide" si elle est comprise entre le **17/07/2025** et le **17/07/2055**.
-
-### Variables d'environnement liées
-
-> **CYCLOSAFE_LOGS** : le script log ses tentatives dans ***$CYCLOSAFE_LOGS/gps_time_sync.log***
-
-> **GPS_SERIAL_PORT** : port serial auquel est connecté le GPS.
+Utilitaire affichant en continu les mesures de la jauge (tension, courant, puissance, état de charge, capacité, température) à l'aide de **bq34z100.py** : ***python3 ./battery_monitor.py***
 
 ## launch_wrapper.sh
 
@@ -81,6 +74,6 @@ Service ayant plusieurs fonctions :
 
 ### Variables d'environnement liées
 
-> **LOW_STORAGE_TRESHOLD** : espace de stockage (en MO) disponible en dessous duquel s'allume le voyant de stockage plein.
+> **LOW_STORAGE_TRESHOLD** : espace de stockage (en MO) disponible en dessous duquel l'enregistrement n'est pas lancé.
 
 > **CYCLOSAFE_LOGS** : définit le répertoire où on_off.log est enregistré

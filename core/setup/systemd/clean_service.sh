@@ -7,9 +7,8 @@ fi
 
 sudo rm /etc/systemd/system/cyclosafed.service
 sudo rm /etc/systemd/system/gpiod.service
-sudo rm /etc/systemd/system/gps_time.service
 
-systemctl stop cyclosafed.service gps_time.service gpiod.service
-systemctl disable cyclosafed.service gps_time.service gpiod.service
+systemctl stop cyclosafed.service gpiod.service
+systemctl disable cyclosafed.service gpiod.service
 systemctl daemon-reload
 systemctl reset-failed

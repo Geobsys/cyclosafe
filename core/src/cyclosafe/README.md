@@ -37,16 +37,18 @@ ros2 run cyclosafe [executable] --ros-args -r __ns:=/lidar1
 
 ## gps.py
 
-Hérite de ASerialPublisher.
+Client **gpsd**. Le port série du GPS est lu exclusivement par gpsd (qui fournit aussi l'heure système via chrony, voir [**services systemd**](../../setup/systemd/README.md#synchronisation-de-lheure-gpsd--chrony)). Le port et le baudrate sont donc définis par `GPS_SERIAL_PORT` et `GPS_BAUDRATE` dans le fichier **.env**, et non par des paramètres du noeud.
 
-Parse les frames NMEA envoyées par un serial device pour publier les informations suivantes sous forme de *cyclosafe_interfaces/msg/NavSatInfo* sur le topic **/gps**:
+Lit les rapports **TPV** et **SKY** de gpsd pour publier les informations suivantes sous forme de *cyclosafe_interfaces/msg/NavSatInfo* sur le topic **/gps**:
 
-- **status** : no_fix, fix, fix (with GPS), fix (with GPS+Glonass), ...
-- **latitude/longitude**: en format décimal
-- **altitude**: en mètres
+- **status** : `STATUS_FIX` si fix 2D/3D, `STATUS_NO_FIX` sinon. **service** indique les constellations des satellites utilisés (GPS, GLONASS, Galileo, BeiDou)
+- **latitude/longitude**: en format décimal (NaN sans fix)
+- **altitude**: en mètres, au-dessus du niveau moyen de la mer (comme le champ altitude de la trame GGA)
 - **hdop/pdop**
 - **ground_speed**: en kilomètres/h
 - **actives_sat**: nombre de satellites utilisés pour le fix
+
+Si gpsd n'est pas joignable ou si la connexion est perdue, une nouvelle tentative est faite toutes les 10s.
 
 **Détail de l'interface** :
 
@@ -56,18 +58,17 @@ ros2 interface show cyclosafe_interfaces/msg/NavSatInfo
 
 ### Paramètres
 
-> **port** : string
-> - port serial sur lequel lire les données (défaut à */dev/ttyUSB0*)
-> - **défaut** : */dev/ttyACM0*
+> **host** : string
+> - adresse de gpsd
+> - **défaut** : *127.0.0.1*
 
-> **baud** : int
-> - baudrate du port serial 
-> - **défaut** : *115200*
+> **gpsd_port** : string
+> - port TCP de gpsd
+> - **défaut** : *2947*
 
 > **period** : float
-> - interval auquel sont lues et parsées les données disponibles.
-> - Seule la **première** donnée valide est prise en compte. Exemple : je lis des données envoyées à 10Hz sur un interval de 5Hz, j'aurais 5 données/secondes (et non pas 10 données réparties sur 5 lectures) et la position lue correspondra toujours à **la première position qui a pu être parsée** (pas nécessairement la dernière envoyéée par le capteur).
-> - **défaut** : *0.5*
+> - interval auquel les rapports reçus de gpsd sont lus et le dernier état connu est publié.
+> - **défaut** : *1.0*
 > - **unité** : secondes
 
 > **start_time** : float
@@ -78,7 +79,7 @@ ros2 interface show cyclosafe_interfaces/msg/NavSatInfo
 ### Example
 
 ~~~
-ros2 run cyclosafe gps --ros-args -p port:=/dev/ttyACM0 -p baud:=115200 -p period:=0.5
+ros2 run cyclosafe gps --ros-args -p period:=1.0
 
 ros2 topic echo /gps
 ~~~
