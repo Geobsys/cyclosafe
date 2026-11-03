@@ -89,7 +89,7 @@ function install_ros() {
   if ! [ -f "$ROSPIAN_KEYRING" ]; then
     local tmpkey
     tmpkey=$(mktemp) || return 1
-    if ! curl -fsSL "$ROSPIAN_URL/rospian-archive-keyring.asc" -o "$tmpkey"; then
+    if ! curl -fsSL "$ROSPIAN_URL/public/rospian-archive-keyring.asc" -o "$tmpkey"; then
       error "Failed to download rospian signing key"
       rm -f "$tmpkey"
       return 1
