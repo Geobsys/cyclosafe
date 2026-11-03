@@ -55,7 +55,7 @@ if [ "$EUID" -eq 0 ]; then
   exit 1
 fi
 
-uname -a | grep raspberrypi > /dev/null
+uname -a | grep rpi > /dev/null
 if [ $? -eq 1 ]; then
   error "This device does not appear to be a raspberry pi"
   exit 1
