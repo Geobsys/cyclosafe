@@ -68,19 +68,19 @@ ssh user@192.168.2.2
 ### Copier des fichiers depuis l'hôte vers le raspberry
 
 ~~~
-scp file_to_copy cycliste@192.168.2.2:/home/cycliste/out_path_on_raspberry
+scp file_to_copy cycliste@192.168.2.2:/home/cyclosafe/out_path_on_raspberry
 
 # Pour copier un dossier
-scp -r folder_to_copy/ cycliste@192.168.2.2:/home/cycliste/out_path_on_raspberry
+scp -r folder_to_copy/ cycliste@192.168.2.2:/home/cyclosafe/out_path_on_raspberry
 ~~~
 
 ### Copier des fichiers depuis le raspberry vers l'hôte
 
 ~~~
-scp cycliste@192.168.2.2:/home/cycliste/file_to_copy out_path_on_host
+scp cycliste@192.168.2.2:/home/cyclosafe/file_to_copy out_path_on_host
 
 # Pour copier un dossier
-scp -r cycliste@192.168.2.2:/home/cycliste/folder_to_copy out_path_on_host
+scp -r cycliste@192.168.2.2:/home/cyclosafe/folder_to_copy out_path_on_host
 ~~~
 
 ### Outils utiles

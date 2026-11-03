@@ -43,9 +43,9 @@ sudo ./sd_flash.sh ./cyclosafe_firmware.img.xz /dev/sdX
 
 ## Personnaliser l'environnement et les paramètres de mesure
 
-Une fois la carte SD flashée et montée (généralement `/media/$HOME/rootfs`), le fichier `/media/$HOME/rootfs/home/cycliste/cyclosafe/core/setup/.env` peut être modifié pour configuré [les différentes variables d'environnement](../core/setup/README.md#env).
+Une fois la carte SD flashée et montée (généralement `/media/$HOME/rootfs`), le fichier `/media/$HOME/rootfs/home/cyclosafe/cyclosafe/core/setup/.env` peut être modifié pour configuré [les différentes variables d'environnement](../core/setup/README.md#env).
 
-Les [paramètres des noeuds ROS](../core/src/cyclosafe/README.md#cyclosafe-package) tels que la fréquence de la caméra et sa résolution peuvent être configurés dans `/media/$HOME/rootfs/home/cycliste/cyclosafe/core/src/cyclosafe/launch/config.py`.
+Les [paramètres des noeuds ROS](../core/src/cyclosafe/README.md#cyclosafe-package) tels que la fréquence de la caméra et sa résolution peuvent être configurés dans `/media/$HOME/rootfs/home/cyclosafe/cyclosafe/core/src/cyclosafe/launch/config.py`.
 
 # import_recordings.py
 
@@ -88,11 +88,11 @@ options:
 ### Exporter en lisant directement la carte SD
 
 ~~~
-./import_recordings.py -x -c /dev/media/sda1/home/cycliste/data/ -o ~/data/test/
+./import_recordings.py -x -c /dev/media/sda1/home/cyclosafe/data/ -o ~/data/test/
 ~~~
 
 - `-x` : nettoie les fichiers de transition après la fin de chaque conversion afin de minimiser l'espace occupé sur l'hôte
-- `-c /dev/media/sda1/home/cycliste/data/` : importer les bags depuis le chemin donné sur la carte SD.
+- `-c /dev/media/sda1/home/cyclosafe/data/` : importer les bags depuis le chemin donné sur la carte SD.
 - `-o ~/data/test/` : exporte les enregistrements vers le dossier de sortie `~/data/test/` 
 
 ### Exporter en SSH
@@ -107,20 +107,20 @@ options:
 
 **Résultat** :
 ~~~
-           INFO     Output directory: /home/cycliste/data/test                 
+           INFO     Output directory: /home/cyclosafe/data/test                 
 Enter SSH password: 
            INFO     Retrieving record list from cycliste@192.168.2.2...         
            INFO     Found 9 record directories.                                
            INFO     [1/9] Importing 20250515-125430 to /home/user/data/test...
            INFO     Running: sshpass -p XXXX scp -r                        
-                    cycliste@192.168.2.2:/home/cycliste/data/20250515-125430                                            
+                    cycliste@192.168.2.2:/home/cyclosafe/data/20250515-125430                                            
                     /home/user/data/test/        
 ...
 INFO     [2/8] Converting bags in 20250515-125326...                       
-           WARNING  /home/cycliste/data/user/20250515-125326 is missing a metadata.yaml
-Attempting to repair /home/cycliste/data/user/20250515-125326/bag
+           WARNING  /home/cyclosafe/data/user/20250515-125326 is missing a metadata.yaml
+Attempting to repair /home/cyclosafe/data/user/20250515-125326/bag
            INFO     Running: unzstd
-                    /home/cycliste/data/user/20250515-125326/bag/bag_0.mcap.zstd
+                    /home/cyclosafe/data/user/20250515-125326/bag/bag_0.mcap.zstd
            INFO     Successfully uncompressed bag
            INFO     Running: ros2 bag reindex .
 ...
@@ -140,7 +140,7 @@ Suppose que les données ont déjà été importées sur l'hôte (manuellement) 
 **Résultat :**
 
 ~~~
-INFO     Output directory: /home/cycliste/data/pouet                                import_recordi:246
+INFO     Output directory: /home/cyclosafe/data/pouet                                import_recordi:246
            INFO     Found 8 record directories in /home/user/data/test
            INFO     [1/8] Converting bags in 20250516-175032...
            INFO     Converted bag already exist in /home/user/data/test/20250516-175032,
